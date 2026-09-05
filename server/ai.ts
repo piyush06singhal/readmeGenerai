@@ -16,25 +16,53 @@ import type {
 } from '../src/types/index.js'
 import { ApiError } from './types.js'
 
-const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1'
 const DECOMMISSIONED_MODELS = [
   'llama3-70b-8192',
   'llama3-8b-8192',
   'llama-4-maverick-17b-128e-instruct',
   'openai/gpt-oss-120b',
+  'gemma2-9b-it',
+  'gemma-7b-it',
+  'mixtral-8x7b-32768',
 ]
 
 const ACTIVE_GROQ_MODELS = [
   'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
-  'mixtral-8x7b-32768',
-  'gemma2-9b-it',
+  'llama-3.2-3b-preview',
+  'llama-3.2-1b-preview',
 ]
 
 const AI_DEFAULT_MODEL = 'llama-3.3-70b-versatile'
 
 const MAX_OUTPUT_TOKENS = 4096
 const REQUEST_TIMEOUT_MS = 90_000
+
+async function getActiveGroqModels(apiKey: string, baseUrl: string): Promise<string[]> {
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    const response = await fetch(`${baseUrl}/models`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout))
+
+    if (response.ok) {
+      const body = (await response.json()) as { data?: { id: string; active?: boolean }[] }
+      if (Array.isArray(body?.data)) {
+        const liveIds = body.data
+          .filter((m) => m.active !== false && !DECOMMISSIONED_MODELS.includes(m.id))
+          .map((m) => m.id)
+        if (liveIds.length > 0) {
+          return liveIds
+        }
+      }
+    }
+  } catch {
+    // ignore — fall back to static active models
+  }
+  return ACTIVE_GROQ_MODELS
+}
 
 // --- Context size budgets (characters), prioritized per the spec ---
 const BUDGET = {
@@ -219,6 +247,7 @@ export async function generateReadme(
   style: ReadmeStyle = 'standard',
   personalization?: string
 ): Promise<GenerateReadmeResponse> {
+  const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1'
   const GROQ_API_KEY = process.env.GROQ_API_KEY
   const GROQ_BASE_URL = process.env.GROQ_BASE_URL ?? GROQ_DEFAULT_BASE_URL
 
@@ -229,6 +258,8 @@ export async function generateReadme(
       500
     )
   }
+
+  const liveModels = await getActiveGroqModels(GROQ_API_KEY, GROQ_BASE_URL)
 
   const userContext = buildContext(projectContext)
   if (!userContext.trim()) {
@@ -253,8 +284,8 @@ export async function generateReadme(
     .join('\n\n')
 
   const rawModel = process.env.GROQ_MODEL?.trim()
-  const primaryModel = rawModel && !DECOMMISSIONED_MODELS.includes(rawModel) ? rawModel : AI_DEFAULT_MODEL
-  const modelsToTry = [...new Set([primaryModel, ...ACTIVE_GROQ_MODELS])].filter((m) => !DECOMMISSIONED_MODELS.includes(m))
+  const primaryModel = rawModel && liveModels.includes(rawModel) && !DECOMMISSIONED_MODELS.includes(rawModel) ? rawModel : AI_DEFAULT_MODEL
+  const modelsToTry = [...new Set([primaryModel, ...liveModels, ...ACTIVE_GROQ_MODELS])].filter((m) => !DECOMMISSIONED_MODELS.includes(m))
 
   let lastError: ApiError | null = null
   let json: GroqChatResponse | null = null
