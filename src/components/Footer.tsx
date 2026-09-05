@@ -57,7 +57,7 @@ export default function Footer() {
 
         <div
           className="container-app relative"
-          style={{ paddingTop: '4rem', paddingBottom: '3rem' }}
+          style={{ paddingTop: '50px', paddingBottom: '36px' }}
         >
           {/* Main footer grid */}
           <div className="grid grid-cols-1 items-start gap-10 mb-12 md:grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))_minmax(0,1.25fr)] md:gap-8 lg:gap-12">
