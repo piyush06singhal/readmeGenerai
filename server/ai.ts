@@ -17,8 +17,20 @@ import type {
 import { ApiError } from './types.js'
 
 const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1'
-// Single configuration point for the model — override with GROQ_MODEL.
-// Defaults to a current, widely-available Groq model.
+const DECOMMISSIONED_MODELS = [
+  'llama3-70b-8192',
+  'llama3-8b-8192',
+  'llama-4-maverick-17b-128e-instruct',
+  'openai/gpt-oss-120b',
+]
+
+const ACTIVE_GROQ_MODELS = [
+  'llama-3.3-70b-versatile',
+  'llama-3.1-8b-instant',
+  'mixtral-8x7b-32768',
+  'gemma2-9b-it',
+]
+
 const AI_DEFAULT_MODEL = 'llama-3.3-70b-versatile'
 
 const MAX_OUTPUT_TOKENS = 4096
@@ -240,9 +252,9 @@ export async function generateReadme(
     .filter((part): part is string => typeof part === 'string' && part.length > 0)
     .join('\n\n')
 
-  const primaryModel = process.env.GROQ_MODEL ?? AI_DEFAULT_MODEL
-  const fallbackModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama3-70b-8192']
-  const modelsToTry = [...new Set([primaryModel, ...fallbackModels])].filter(Boolean)
+  const rawModel = process.env.GROQ_MODEL?.trim()
+  const primaryModel = rawModel && !DECOMMISSIONED_MODELS.includes(rawModel) ? rawModel : AI_DEFAULT_MODEL
+  const modelsToTry = [...new Set([primaryModel, ...ACTIVE_GROQ_MODELS])].filter((m) => !DECOMMISSIONED_MODELS.includes(m))
 
   let lastError: ApiError | null = null
   let json: GroqChatResponse | null = null
@@ -292,7 +304,8 @@ export async function generateReadme(
             429
           )
         }
-        if (providerMessage?.toLowerCase().includes('model')) {
+        const lowerMsg = providerMessage?.toLowerCase() ?? ''
+        if (lowerMsg.includes('model') || lowerMsg.includes('decommissioned') || lowerMsg.includes('deprecated') || lowerMsg.includes('not exist')) {
           console.warn(`Groq model '${modelCandidate}' failed: ${providerMessage}. Trying fallback model...`)
           lastError = new ApiError(
             `The AI model '${modelCandidate}' is unavailable: ${providerMessage}`,
