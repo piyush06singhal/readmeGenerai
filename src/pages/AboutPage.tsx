@@ -419,7 +419,7 @@ export default function AboutPage() {
                 </Button>
               </Link>
               <a
-                href="https://github.com"
+                href="https://github.com/piyush06singhal/readmeGenerai"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto"

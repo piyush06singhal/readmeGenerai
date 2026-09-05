@@ -54,7 +54,7 @@ export default function Navbar() {
 
           <nav className="flex items-center gap-6" aria-label="Main navigation">
             <a
-              href="https://github.com"
+              href="https://github.com/piyush06singhal/readmeGenerai"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden md:inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors duration-200"
@@ -82,7 +82,7 @@ export default function Navbar() {
             </Link>
 
             <a
-              href="https://github.com"
+              href="https://github.com/piyush06singhal/readmeGenerai"
               target="_blank"
               rel="noopener noreferrer"
               className="w-8 h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-slate-50 hover:border-accent-indigo/40 hover:shadow-[0_0_12px_rgba(99,102,241,0.18)] transition-all duration-200"
