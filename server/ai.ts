@@ -396,9 +396,18 @@ export async function generateReadme(
     )
   }
 
+  // Strip thinking / reasoning blocks (e.g. <think>...</think> or pre-heading analysis text)
+  markdown = markdown.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+
   // Strip a single wrapping code fence if the provider returned one.
   const fenced = markdown.match(/^```(?:markdown|md)?\n([\s\S]*?)\n```$/)
   if (fenced) markdown = fenced[1].trim()
+
+  // If there is reasoning preamble before the first H1 "# Project Title" heading, discard it
+  const firstH1Index = markdown.search(/^#\s+\S/m)
+  if (firstH1Index > 0) {
+    markdown = markdown.slice(firstH1Index).trim()
+  }
 
   if (!/^#\s+\S/m.test(markdown) || (markdown.match(/```/g)?.length ?? 0) % 2 !== 0) {
     throw new ApiError(
