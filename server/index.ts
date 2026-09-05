@@ -3,12 +3,12 @@
 
 import type { IncomingMessage, ServerResponse } from 'http'
 import { URL } from 'url'
-import { analyzeRepository } from './analysis.ts'
-import { generateReadme } from './ai.ts'
-import { fetchFileContent } from './github.ts'
-import { ApiError } from './types.ts'
-import type { AnalyzeRequest } from './types.ts'
-import type { ProjectContext, ReadmeStyle } from '../src/types/index.ts'
+import { analyzeRepository } from './analysis.js'
+import { generateReadme } from './ai.js'
+import { fetchFileContent } from './github.js'
+import { ApiError } from './types.js'
+import type { AnalyzeRequest } from './types.js'
+import type { ProjectContext, ReadmeStyle } from '../src/types/index.js'
 
 function sendJson(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json' })

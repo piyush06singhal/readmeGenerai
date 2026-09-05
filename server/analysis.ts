@@ -9,16 +9,16 @@ import type {
   TechStack,
   DependencyInfo,
   EnvVariable,
-} from '../src/types/index.ts'
-import type { GitHubRepoResponse, GitHubTreeItem } from './types.ts'
-import { ApiError } from './types.ts'
+} from '../src/types/index.js'
+import type { GitHubRepoResponse, GitHubTreeItem } from './types.js'
+import { ApiError } from './types.js'
 import {
   fetchRepo,
   fetchFileTree,
   fetchFileContent,
   fetchLanguages,
   parseRepoUrl,
-} from './github.ts'
+} from './github.js'
 
 // Priority files to fetch (P0 = highest priority)
 const PRIORITY_FILES = [

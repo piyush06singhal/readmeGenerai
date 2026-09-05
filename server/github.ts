@@ -3,8 +3,8 @@ import type {
   GitHubTreeResponse,
   GitHubLanguagesResponse,
   GitHubContentResponse,
-} from './types.ts'
-import { ApiError as ApiErrorClass } from './types.ts'
+} from './types.js'
+import { ApiError as ApiErrorClass } from './types.js'
 
 const GITHUB_API = 'https://api.github.com'
 

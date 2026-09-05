@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
-import { createServer } from './server/index.ts'
+import { createServer } from './server/index.js'
 
 function apiPlugin(): Plugin {
   return {

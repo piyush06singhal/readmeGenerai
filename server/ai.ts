@@ -13,8 +13,8 @@ import type {
   ProjectContext,
   ReadmeStyle,
   GenerateReadmeResponse,
-} from '../src/types/index.ts'
-import { ApiError } from './types.ts'
+} from '../src/types/index.js'
+import { ApiError } from './types.js'
 
 const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1'
 // Single configuration point for the model — override with GROQ_MODEL.

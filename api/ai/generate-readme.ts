@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http'
-import { createServer } from '../../server/index.ts'
+import { createServer } from '../../server/index.js'
 
 const handler = createServer()
 
