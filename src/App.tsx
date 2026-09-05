@@ -12,6 +12,7 @@ import { useReducedMotion } from './hooks/useReducedMotion';
 // never blocks first paint of the landing page.
 const AnalyzePage = lazy(() => import('./pages/AnalyzePage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const InfoPage = lazy(() => import('./pages/InfoPage'));
 
 function LazyRoute({ children }: { children: ReactNode }) {
   return (
@@ -56,6 +57,14 @@ function PageTransitions() {
               element={
                 <LazyRoute>
                   <AnalyzePage />
+                </LazyRoute>
+              }
+            />
+            <Route
+              path="/info/:page"
+              element={
+                <LazyRoute>
+                  <InfoPage />
                 </LazyRoute>
               }
             />
