@@ -16,15 +16,24 @@ function sendJson(res: ServerResponse, status: number, data: unknown) {
 }
 
 function sendError(res: ServerResponse, error: unknown) {
-  if (error instanceof ApiError) {
-    sendJson(res, error.status, {
-      message: error.message,
-      code: error.code,
-      status: error.status,
+  console.error('[API Error]', error)
+  const err = error as Record<string, unknown> | null | undefined
+  if (err && typeof err === 'object' && typeof err.status === 'number' && typeof err.message === 'string') {
+    sendJson(res, err.status, {
+      message: err.message,
+      code: err.code ?? 'API_ERROR',
+      status: err.status,
+    })
+  } else if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('network'))) {
+    sendJson(res, 503, {
+      message: 'Could not connect to external services. Please check your network connection.',
+      code: 'NETWORK_ERROR',
+      status: 503,
     })
   } else {
+    const msg = error instanceof Error ? error.message : 'Internal server error'
     sendJson(res, 500, {
-      message: 'Internal server error',
+      message: msg,
       code: 'INTERNAL_ERROR',
       status: 500,
     })
@@ -37,12 +46,10 @@ const RATE_WINDOW_MS = 60_000
 const rateBuckets = new Map<string, { startedAt: number; count: number }>()
 
 function getClientKey(req: IncomingMessage): string {
-  if (process.env.TRUST_PROXY !== 'true') {
-    return req.socket.remoteAddress ?? 'unknown'
-  }
-  const forwarded = req.headers['x-forwarded-for']
-  const address = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0]
-  return (address ?? req.socket.remoteAddress ?? 'unknown').trim()
+  const forwarded = req.headers['x-forwarded-for'] || req.headers['x-real-ip']
+  const address = Array.isArray(forwarded) ? forwarded[0] : (typeof forwarded === 'string' ? forwarded.split(',')[0] : undefined)
+  if (address) return address.trim()
+  return req.socket?.remoteAddress ?? 'unknown'
 }
 
 function enforceRateLimit(req: IncomingMessage, res: ServerResponse, limit: number): boolean {
@@ -69,6 +76,11 @@ function enforceRateLimit(req: IncomingMessage, res: ServerResponse, limit: numb
 }
 
 async function readBody(req: IncomingMessage): Promise<string> {
+  const reqAny = req as unknown as { body?: unknown }
+  if (reqAny.body !== undefined && reqAny.body !== null) {
+    if (typeof reqAny.body === 'string') return reqAny.body
+    return JSON.stringify(reqAny.body)
+  }
   return new Promise((resolve, reject) => {
     let body = ''
     let totalBytes = 0
@@ -246,9 +258,10 @@ async function handleFile(req: IncomingMessage, res: ServerResponse) {
 }
 
 export function createServer() {
-  return async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+  return async (req: IncomingMessage, res: ServerResponse, next?: () => void) => {
     const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
-    const path = url.pathname
+    const rawPath = url.pathname
+    const path = rawPath.startsWith('/api') ? (rawPath.replace(/^\/api/, '') || '/') : rawPath
 
     const limit = path === '/generate' || path === '/ai/generate-readme' ? 10 : 60
     if (!enforceRateLimit(req, res, limit)) return
@@ -277,7 +290,11 @@ export function createServer() {
       return
     }
 
-    // Not found - pass to next middleware
-    next()
+    // Not found - pass to next middleware or return 404 if no next middleware
+    if (typeof next === 'function') {
+      next()
+    } else {
+      sendJson(res, 404, { message: 'Not found', code: 'NOT_FOUND', status: 404 })
+    }
   }
 }

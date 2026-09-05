@@ -394,7 +394,7 @@ export async function analyzeRepository(
   }
 
   // Find priority files
-  const treeItems = treeResponse.tree
+  const treeItems = treeResponse?.tree || []
   const filesToFetch: string[] = []
 
   for (const priorityFile of PRIORITY_FILES) {
@@ -463,15 +463,17 @@ export async function analyzeRepository(
     )
   }
 
-  // Fetch languages
+  // Fetch languages safely (don't fail analysis if language call fails)
   fetchPromises.push(
-    fetchLanguages(owner, repo).then((langs) => {
-      const sorted = Object.entries(langs).sort(([, a], [, b]) => b - a)
-      return ['__languages__', JSON.stringify(sorted.map(([l]) => l))] as [
-        string,
-        string | null,
-      ]
-    })
+    fetchLanguages(owner, repo)
+      .then((langs) => {
+        const sorted = Object.entries(langs || {}).sort(([, a], [, b]) => b - a)
+        return ['__languages__', JSON.stringify(sorted.map(([l]) => l))] as [
+          string,
+          string | null,
+        ]
+      })
+      .catch(() => ['__languages__', JSON.stringify([])] as [string, string | null])
   )
 
   const results = await Promise.all(fetchPromises)

@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/github/analyze", "destination": "/api/analyze" },
+    { "source": "/api/ai/generate-readme", "destination": "/api/generate" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
+

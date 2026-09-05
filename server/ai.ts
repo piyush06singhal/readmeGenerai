@@ -19,7 +19,7 @@ import { ApiError } from './types.ts'
 const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1'
 // Single configuration point for the model — override with GROQ_MODEL.
 // Defaults to a current, widely-available Groq model.
-const AI_DEFAULT_MODEL = 'openai/gpt-oss-120b'
+const AI_DEFAULT_MODEL = 'llama-3.3-70b-versatile'
 
 const MAX_OUTPUT_TOKENS = 4096
 const REQUEST_TIMEOUT_MS = 90_000

@@ -45,12 +45,13 @@ cp .env.example .env   # then edit .env
 ```
 GROQ_API_KEY=
 # Optional:
-# GROQ_MODEL=openai/gpt-oss-120b
+# GROQ_MODEL=llama-3.3-70b-versatile
+# GITHUB_TOKEN=your_github_token  # Optional: increases GitHub API limit from 60 to 5,000 req/hr
 # GROQ_BASE_URL=https://api.groq.com/openai/v1
 # TRUST_PROXY=true  # only when running behind a trusted reverse proxy
 ```
 
-> The default model is `openai/gpt-oss-120b`. If generation returns a `CONFIG_ERROR` about the model, verify your account's available models via `GET /openai/v1/models`.
+> The default model is `llama-3.3-70b-versatile`. You can override it with `GROQ_MODEL`.
 
 ### Running the dev server
 
@@ -95,9 +96,21 @@ layouts, and `prefers-reduced-motion`. Decorative landing-page controls are
 intentionally non-interactive; the real copy and download controls are exposed
 in the README workspace.
 
-### Running in production
+### Deploying to Vercel
 
-Build, then launch the standalone server, which serves `dist/` and the API together:
+This repository includes a native Vercel setup with Vercel Serverless Functions (`api/`) and `vercel.json` rewrites.
+
+1. Push your repository to GitHub.
+2. Import the repository into **Vercel**.
+3. In your Vercel Project Settings under **Environment Variables**, add:
+   - `GROQ_API_KEY`: Your Groq API Key
+   - `GROQ_MODEL` *(Optional)*: `llama-3.3-70b-versatile`
+   - `GITHUB_TOKEN` *(Optional)*: GitHub Personal Access Token (recommended to avoid GitHub rate limits on shared Vercel serverless IPs)
+4. Click **Deploy**. Vercel will automatically build the static frontend (`npm run build`) and host the API routes on Vercel Serverless Functions (`/api/analyze`, `/api/generate`, `/api/file`).
+
+### Running standalone in Node.js production
+
+Build, then launch the standalone Node.js server, which serves `dist/` and the API together:
 
 ```bash
 npm run build

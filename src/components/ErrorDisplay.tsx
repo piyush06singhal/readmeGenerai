@@ -35,6 +35,10 @@ const errorHints: Record<string, string> = {
     'No usable project context was available. The repository may be too minimal for analysis.',
   INVALID_OUTPUT:
     'The generated Markdown was incomplete or malformed. Please try again.',
+  METHOD_NOT_ALLOWED:
+    'The server route rejected the request method. Check Vercel serverless API routing.',
+  INTERNAL_ERROR:
+    'The server encountered an error. Please check server environment variables (e.g. GROQ_API_KEY).',
 };
 
 export default function ErrorDisplay({ message, code, onRetry, title = 'Something went wrong' }: ErrorDisplayProps) {

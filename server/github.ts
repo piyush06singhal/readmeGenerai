@@ -1,6 +1,3 @@
-// GitHub API client for fetching repository data.
-// All requests go through GitHub REST API (unauthenticated for public repos).
-
 import type {
   GitHubRepoResponse,
   GitHubTreeResponse,
@@ -11,13 +8,20 @@ import { ApiError as ApiErrorClass } from './types.ts'
 
 const GITHUB_API = 'https://api.github.com'
 
-const headers: Record<string, string> = {
-  Accept: 'application/vnd.github.v3+json',
-  'User-Agent': 'README-3D-Generator',
+function getHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github.v3+json',
+    'User-Agent': 'README-3D-Generator',
+  }
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  if (token) {
+    headers.Authorization = token.startsWith('Bearer ') || token.startsWith('token ') ? token : `token ${token}`
+  }
+  return headers
 }
 
 async function fetchGitHub<T>(url: string): Promise<T> {
-  const response = await fetch(url, { headers })
+  const response = await fetch(url, { headers: getHeaders() })
 
   if (!response.ok) {
     if (response.status === 404) {
@@ -25,7 +29,7 @@ async function fetchGitHub<T>(url: string): Promise<T> {
     }
     if (response.status === 403) {
       throw new ApiErrorClass(
-        'GitHub API rate limit exceeded',
+        'GitHub API rate limit exceeded. Please try again later or configure a GITHUB_TOKEN.',
         'RATE_LIMITED',
         429
       )
@@ -74,7 +78,7 @@ export async function fetchFileContent(
   try {
     const response = await fetch(
       `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}`,
-      { headers }
+      { headers: getHeaders() }
     )
 
     if (!response.ok) {
@@ -83,11 +87,15 @@ export async function fetchFileContent(
 
     const data = (await response.json()) as GitHubContentResponse
 
-    if (data.encoding === 'base64') {
+    if (!data || typeof data !== 'object' || !('content' in data)) {
+      return null
+    }
+
+    if (data.encoding === 'base64' && data.content) {
       return Buffer.from(data.content, 'base64').toString('utf-8')
     }
 
-    return data.content
+    return typeof data.content === 'string' ? data.content : null
   } catch {
     return null
   }
@@ -105,12 +113,10 @@ export async function fetchLanguages(
 export function parseRepoUrl(
   url: string
 ): { owner: string; repo: string } | null {
-  // Accept https://github.com/owner/repo (or github.com/...), with optional
-  // www., an optional trailing slash, and an optional '.git' suffix. Rejects
-  // other hosts and extra path segments (tree/, blob/, issues/, etc.).
-  const trimmed = url.trim().replace(/\/+$/, '')
-  const match = trimmed.match(
-    /^(?:https?:\/\/)?(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git)?$/
+  if (!url || typeof url !== 'string') return null
+  const cleaned = url.trim().split('?')[0].split('#')[0].replace(/\/+$/, '')
+  const match = cleaned.match(
+    /^(?:https?:\/\/)?(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git)?$/i
   )
   if (!match) return null
   return { owner: match[1], repo: match[2] }

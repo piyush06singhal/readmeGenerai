@@ -30,7 +30,19 @@ export async function apiFetch<T>(
       if (body?.message) message = body.message;
       if (body?.code) code = body.code;
     } catch {
-      // ignore — fall back to generic message
+      if (response.status === 404) {
+        message = 'The API endpoint was not found (404). Please verify serverless API route deployment.';
+        code = 'NOT_FOUND';
+      } else if (response.status === 405) {
+        message = 'Method not allowed (405). Route rejected POST request.';
+        code = 'METHOD_NOT_ALLOWED';
+      } else if (response.status === 500) {
+        message = 'Internal server error (500). Please check server logs.';
+        code = 'INTERNAL_ERROR';
+      } else if (response.status === 502 || response.status === 503 || response.status === 504) {
+        message = 'Server is currently unavailable or timed out. Please try again.';
+        code = 'NETWORK_ERROR';
+      }
     }
     throw new ApiError(message, response.status, code);
   }
