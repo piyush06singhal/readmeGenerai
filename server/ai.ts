@@ -205,32 +205,37 @@ function buildContext(projectContext: ProjectContext): string {
 function buildSystemPrompt(style: ReadmeStyle): string {
   const styleGuidance: Record<ReadmeStyle, string> = {
     standard:
-      'Produce a professional, balanced README. Include the sections that the repository actually supports. Aim for accuracy over length.',
+      'Produce a balanced, professional README. Include standard section headers (## Features, ## Tech Stack, ## Installation, ## Usage, ## Project Structure, ## License). Wrap all shell/run commands in fenced code blocks (```bash ... ```).',
     detailed:
-      'Produce a thorough, more detailed README. Where the context supports it, expand explanations, add an API reference, troubleshooting, examples and deeper documentation. Never add detail the context does not support.',
+      'Produce a comprehensive, highly detailed README. Expand each section with thorough descriptions, bulleted features, a complete tech stack overview, step-by-step setup and usage instructions (wrapped in fenced code blocks ```bash ... ```), project structure, environment variables (if present), contributing guidelines, and license details.',
     minimal:
-      'Produce a concise, minimal README. Keep only the essential sections (description, quick start, tech stack, structure, license) and keep each section short.',
+      'Produce a concise, clean README. Focus on essential sections (## Overview, ## Features, ## Installation, ## Usage, ## License) with short paragraphs and fenced code blocks (```bash ... ```) for commands.',
   }
 
-  return `You are a senior technical documentation writer. You write clear, accurate, and concise README files.
+  return `You are a senior technical documentation writer. You write clear, accurate, structured, and beautiful README.md files.
 
-## Core rules
-- Use ONLY information supported by the supplied project context.
-- Do NOT invent features, APIs, installation commands, environment variables, database technologies, deployment configuration, or dependencies.
-- Do NOT claim a technology merely because it is common for the project type.
-- If information is unavailable, OMIT the section, or clearly mark it as "to be provided".
-- Preserve useful project-specific information from the Existing README when present. Improve organization and fix formatting problems, but do not delete important details.
-- Installation and run commands MUST come from the actual package scripts / dependency manifests supplied. Do not assume npm for non-Node projects.
-- Only generate an API Reference section if actual endpoints are identifiable from the context. Otherwise omit it rather than invent it.
-- Do not exaggerate features. A dependency is not automatically a "feature".
-- Prefer concise, technically accurate documentation. Accuracy beats impressive-sounding content.
+## Mandatory Heading Rules
+Structure your README using standard H2 headings (## Heading Name) so that automatic documentation tools and static analyzers can parse your Markdown accurately:
+- # [Project Title] (Single top-level title at line 1)
+- Overview paragraph right below the title
+- ## Features
+- ## Tech Stack
+- ## Installation
+- ## Usage
+- ## Environment Variables (only if environment variables or .env file details are present)
+- ## Project Structure
+- ## Contributing
+- ## License
 
-## README structure
-Use a standard structure (# Project, description, Features, Tech Stack, Getting Started / Prerequisites / Installation / Environment Variables / Running Locally, Usage, Project Structure, API Reference, Contributing, License) but include ONLY the sections that make sense for the analyzed repository. Adapt to whether the project is a library, a frontend app, a backend service, or a CLI.
+## Formatting Rules
+- ALL setup, installation, build, and run commands MUST be enclosed in fenced code blocks with language specifiers (e.g. \`\`\`bash\\n...\\n\`\`\`).
+- Use bullet points (\`-\`) for features and tech stack items.
+- Use ONLY facts supported by the supplied project context. Do NOT invent fake APIs, fake dependencies, or fake credentials.
+- Installation and run commands MUST derive from actual package scripts or project manifests.
 
 Style: ${styleGuidance[style]}
 
-Return ONLY the final Markdown document. Do not wrap it in a code fence. Do not add any preamble like "Here is your README:".`
+Return ONLY the final Markdown document. Do not wrap the entire document in a master code fence. Do not add preamble text like "Here is your README:".`
 }
 
 interface GroqChatResponse {

@@ -61,7 +61,7 @@ export default function WorkspaceHeader({
   showPersonalization = false,
 }: WorkspaceHeaderProps) {
   return (
-    <div className="shrink-0 p-4 md:p-5 bg-white/80 border-b border-slate-200 backdrop-blur-xl">
+    <div className="relative z-30 shrink-0 p-4 md:p-5 bg-white/80 border-b border-slate-200 backdrop-blur-xl">
       {/* Row 1: Repo info + dirty indicator */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">

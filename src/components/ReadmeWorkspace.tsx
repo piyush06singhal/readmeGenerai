@@ -161,7 +161,7 @@ export default function ReadmeWorkspace({ context, onBack }: ReadmeWorkspaceProp
   }, [genState.status, handleCopy, handleDownload]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)]">
+    <div className="flex flex-col min-h-[calc(100vh-12rem)] rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-xl shadow-xl shadow-slate-200/50 overflow-hidden">
       {/* Header — always visible */}
       <WorkspaceHeader
         repo={repo}

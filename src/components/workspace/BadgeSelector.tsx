@@ -90,7 +90,7 @@ export default function BadgeSelector({
           id={panelId}
           role="dialog"
           aria-label="Badge options"
-          className="absolute right-0 top-full mt-2 w-60 z-50 rounded-xl bg-white border border-slate-200 shadow-2xl shadow-slate-400/40 backdrop-blur-xl overflow-hidden"
+          className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 w-64 z-[100] rounded-xl bg-white border border-slate-200 shadow-2xl shadow-slate-900/15 backdrop-blur-xl overflow-hidden"
         >
           <div className="px-3 py-2 border-b border-slate-200">
             <p className="text-[10px] uppercase tracking-[0.14em] text-text-tertiary font-medium">

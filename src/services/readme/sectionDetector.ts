@@ -60,6 +60,8 @@ export const SECTION_ALIASES: Partial<Record<ReadmeSectionId, string[]>> = {
     'summary',
     'what is',
     'what is this',
+    'welcome',
+    'background',
   ],
   features: [
     'features',
@@ -71,9 +73,13 @@ export const SECTION_ALIASES: Partial<Record<ReadmeSectionId, string[]>> = {
     'main features',
     'why',
     'why this',
+    'core features',
+    'functionality',
+    'services',
   ],
   techStack: [
     'tech stack',
+    'technology stack',
     'technologies',
     'built with',
     'technology',
@@ -84,6 +90,9 @@ export const SECTION_ALIASES: Partial<Record<ReadmeSectionId, string[]>> = {
     'dependencies',
     'tech',
     'tools',
+    'frameworks',
+    'architecture',
+    'built using',
   ],
   installation: [
     'installation',
@@ -99,6 +108,10 @@ export const SECTION_ALIASES: Partial<Record<ReadmeSectionId, string[]>> = {
     'local setup',
     'local development',
     'getting started with',
+    'setup & installation',
+    'installation & setup',
+    'installation guide',
+    'how to install',
   ],
   usage: [
     'usage',
@@ -113,6 +126,9 @@ export const SECTION_ALIASES: Partial<Record<ReadmeSectionId, string[]>> = {
     'consumer guide',
     'using',
     'how to',
+    'running the app',
+    'running locally',
+    'usage guide',
   ],
   envVariables: [
     'environment variables',
@@ -122,6 +138,9 @@ export const SECTION_ALIASES: Partial<Record<ReadmeSectionId, string[]>> = {
     'environment config',
     'configuration',
     'environment setup',
+    'env setup',
+    'configuration variables',
+    'environment variables & setup',
   ],
   projectStructure: [
     'project structure',
@@ -131,6 +150,9 @@ export const SECTION_ALIASES: Partial<Record<ReadmeSectionId, string[]>> = {
     'structure',
     'file layout',
     'project layout',
+    'repository structure',
+    'codebase structure',
+    'tree layout',
   ],
   contributing: [
     'contributing',
@@ -141,8 +163,10 @@ export const SECTION_ALIASES: Partial<Record<ReadmeSectionId, string[]>> = {
     'development',
     'developing',
     'code of conduct',
+    'contributor guide',
+    'contributing guidelines',
   ],
-  license: ['license', 'licence', 'licensing', 'legal', 'copyright', 'license information'],
+  license: ['license', 'licence', 'licensing', 'legal', 'copyright', 'license information', 'terms'],
   api: [
     'api',
     'api reference',
@@ -173,6 +197,7 @@ function aliasMatches(normalized: string, alias: string): boolean {
   if (normalized === alias) return true;
   if (normalized.startsWith(alias + ' ')) return true;
   if (normalized.startsWith(alias + ':')) return true;
+  if (normalized.includes(alias)) return true;
   return false;
 }
 
