@@ -207,25 +207,12 @@ export async function generateReadme(
   style: ReadmeStyle = 'standard',
   personalization?: string
 ): Promise<GenerateReadmeResponse> {
-  // Read config from the environment at call time. This is important in dev:
-  // Vite imports this module during config load — before the api plugin's
-  // configureServer() runs loadEnv(.env) — so a module-level read would pin
-  // GROQ_API_KEY to 'undefined'. Reading lazily works for both Vite dev and
-  // the standalone server (node --env-file=.env).
   const GROQ_API_KEY = process.env.GROQ_API_KEY
   const GROQ_BASE_URL = process.env.GROQ_BASE_URL ?? GROQ_DEFAULT_BASE_URL
-  const AI_MODEL = process.env.GROQ_MODEL ?? AI_DEFAULT_MODEL
 
   if (!GROQ_API_KEY) {
     throw new ApiError(
-      'The Groq API key is not configured on the server.',
-      'CONFIG_ERROR',
-      500
-    )
-  }
-  if (!AI_MODEL) {
-    throw new ApiError(
-      'The Groq model is not configured on the server.',
+      'The Groq API key is not configured on the server. Please set GROQ_API_KEY in Vercel Environment Variables.',
       'CONFIG_ERROR',
       500
     )
@@ -241,9 +228,6 @@ export async function generateReadme(
   }
 
   const systemPrompt = buildSystemPrompt(style)
-
-  // Optional user-provided instructions take precedence over generic guidance.
-  // Clamped so a single prompt can't blow the request budget.
   const personalizationBlock = personalization?.trim()
     ? `## User requirements (follow these EXACTLY when writing the README)\n${clamp(personalization.trim(), 2000)}\n\nThese are hard constraints from the reader. Structure, tone, sections, and emphasis must match them, unless they contradict the project context.`
     : null
@@ -256,83 +240,104 @@ export async function generateReadme(
     .filter((part): part is string => typeof part === 'string' && part.length > 0)
     .join('\n\n')
 
-  // Request timeout via AbortController
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  const primaryModel = process.env.GROQ_MODEL ?? AI_DEFAULT_MODEL
+  const fallbackModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'llama3-70b-8192']
+  const modelsToTry = [...new Set([primaryModel, ...fallbackModels])].filter(Boolean)
 
-  let json: GroqChatResponse
-  try {
-    const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        temperature: style === 'minimal' ? 0.4 : 0.7,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-      signal: controller.signal,
-    })
+  let lastError: ApiError | null = null
+  let json: GroqChatResponse | null = null
 
-    if (!response.ok) {
-      // Surface provider errors without leaking internals or the key.
-      if (response.status === 401 || response.status === 403) {
+  for (const modelCandidate of modelsToTry) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+    try {
+      const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: modelCandidate,
+          temperature: style === 'minimal' ? 0.4 : 0.7,
+          max_tokens: MAX_OUTPUT_TOKENS,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        }),
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        let providerMessage: string | undefined
+        try {
+          const body = (await response.json()) as GroqChatResponse
+          providerMessage = body.error?.message
+        } catch {
+          // ignore
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          throw new ApiError(
+            `The Groq API key is invalid or unauthorized (${providerMessage ?? 'Unauthorized'}). Please check GROQ_API_KEY in Vercel environment variables.`,
+            'CONFIG_ERROR',
+            500
+          )
+        }
+        if (response.status === 429) {
+          throw new ApiError(
+            'The AI service is busy or rate limited. Please try again in a moment.',
+            'RATE_LIMITED',
+            429
+          )
+        }
+        if (providerMessage?.toLowerCase().includes('model')) {
+          console.warn(`Groq model '${modelCandidate}' failed: ${providerMessage}. Trying fallback model...`)
+          lastError = new ApiError(
+            `The AI model '${modelCandidate}' is unavailable: ${providerMessage}`,
+            'CONFIG_ERROR',
+            500
+          )
+          continue
+        }
         throw new ApiError(
-          'The AI service rejected the request. Please check the server configuration.',
-          'CONFIG_ERROR',
-          500
+          providerMessage ? `AI service error: ${providerMessage}` : 'The AI service returned an error. Please try again.',
+          'PROVIDER_ERROR',
+          502
         )
       }
-      if (response.status === 429) {
-        throw new ApiError(
-          'The AI service is busy. Please try again in a moment.',
-          'RATE_LIMITED',
-          429
-        )
+
+      json = (await response.json()) as GroqChatResponse
+      if (json?.choices?.[0]?.message?.content) {
+        break
       }
-      let providerMessage: string | undefined
-      try {
-        const body = (await response.json()) as GroqChatResponse
-        providerMessage = body.error?.message
-      } catch {
-        // ignore — fall back to generic message
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.code === 'CONFIG_ERROR' && modelsToTry.indexOf(modelCandidate) < modelsToTry.length - 1) {
+          lastError = error
+          continue
+        }
+        throw error
       }
-      if (providerMessage?.toLowerCase().includes('model')) {
-        throw new ApiError(
-          'The configured AI model is unavailable. Please check the server configuration.',
-          'CONFIG_ERROR',
-          500
-        )
-      }
+      const aborted = error instanceof Error && error.name === 'AbortError'
       throw new ApiError(
-        'The AI service returned an error. Please try again in a moment.',
-        'PROVIDER_ERROR',
-        502
+        aborted
+          ? 'The AI service took too long to respond. Please try again.'
+          : 'Could not reach the AI service. Please try again in a moment.',
+        aborted ? 'TIMEOUT' : 'NETWORK_ERROR',
+        aborted ? 504 : 503
       )
+    } finally {
+      clearTimeout(timeout)
     }
-
-    json = (await response.json()) as GroqChatResponse
-  } catch (error) {
-    if (error instanceof ApiError) throw error
-    const aborted = error instanceof Error && error.name === 'AbortError'
-    throw new ApiError(
-      aborted
-        ? 'The AI service took too long to respond. Please try again.'
-        : 'Could not reach the AI service. Please try again in a moment.',
-      aborted ? 'TIMEOUT' : 'NETWORK_ERROR',
-      aborted ? 504 : 503
-    )
-  } finally {
-    clearTimeout(timeout)
   }
 
-  let markdown = json.choices?.[0]?.message?.content?.trim() ?? ''
+  if (!json && lastError) {
+    throw lastError
+  }
+
+  let markdown = json?.choices?.[0]?.message?.content?.trim() ?? ''
 
   if (!markdown) {
     throw new ApiError(
